@@ -2,6 +2,7 @@ package ru.practicum.collector.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ru.practicum.collector.mapper.HubEventMapper;
@@ -17,29 +18,30 @@ import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 public class HubEventService {
     private final KafkaTemplate<String, HubEventAvro> kafkaTemplate;
     private final HubEventMapper hubEventMapper;
-    private static final String TOPIC = "telemetry.hubs.v1";
+    @Value("${kafka.topic.hubs:telemetry.hubs.v1}")
+    private String hubTopic;
 
     public void send(DeviceAddedEvent event) {
         HubEventAvro avro = hubEventMapper.toAvro(event);
-        kafkaTemplate.send(TOPIC, avro.getHubId(), avro);
+        kafkaTemplate.send(hubTopic, null, event.getTimestamp().toEpochMilli(), avro.getHubId(), avro);
         log.info("DEVICE_ADDED send: {}", avro);
     }
 
     public void send(DeviceRemovedEvent event) {
         HubEventAvro avro = hubEventMapper.toAvro(event);
-        kafkaTemplate.send(TOPIC, avro.getHubId(), avro);
+        kafkaTemplate.send(hubTopic, null, event.getTimestamp().toEpochMilli(), avro.getHubId(), avro);
         log.info("DEVICE_REMOVED send: {}", avro);
     }
 
     public void send(ScenarioAddedEvent event) {
         HubEventAvro avro = hubEventMapper.toAvro(event);
-        kafkaTemplate.send(TOPIC, avro.getHubId(), avro);
+        kafkaTemplate.send(hubTopic, null, event.getTimestamp().toEpochMilli(), avro.getHubId(), avro);
         log.info("SCENARIO_ADDED send: {}", avro);
     }
 
     public void send(ScenarioRemovedEvent event) {
         HubEventAvro avro = hubEventMapper.toAvro(event);
-        kafkaTemplate.send(TOPIC, avro.getHubId(), avro);
+        kafkaTemplate.send(hubTopic, null, event.getTimestamp().toEpochMilli(), avro.getHubId(), avro);
         log.info("SCENARIO_REMOVED send: {}", avro);
     }
 }
