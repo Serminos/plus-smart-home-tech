@@ -9,6 +9,8 @@ import ru.yandex.practicum.protobuf.telemetry.event.DeviceAddedEventProto;
 import ru.yandex.practicum.protobuf.telemetry.event.DeviceTypeProto;
 import ru.yandex.practicum.protobuf.telemetry.event.HubEventProto;
 
+import com.google.protobuf.util.Timestamps;
+
 @Component
 public class DeviceAddedHandler extends BaseHubHandler {
 
@@ -22,7 +24,7 @@ public class DeviceAddedHandler extends BaseHubHandler {
 
         return HubEventAvro.newBuilder()
                 .setHubId(hubEvent.getHubId())
-                .setTimestamp(hubEvent.getTimestamp().getSeconds())
+                .setTimestamp(Timestamps.toMillis(hubEvent.getTimestamp()))
                 .setPayload(new DeviceAddedEventAvro(event.getId(), toDeviceTypeAvro(event.getType())))
                 .build();
     }
