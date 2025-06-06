@@ -1,5 +1,6 @@
 package ru.practicum.collector.handler.hub;
 
+import com.google.protobuf.util.Timestamps;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
@@ -20,7 +21,7 @@ public class ScenarioRemovedHandler extends BaseHubHandler {
 
         return HubEventAvro.newBuilder()
                 .setHubId(hubEvent.getHubId())
-                .setTimestamp(hubEvent.getTimestamp().getSeconds())
+                .setTimestamp(Timestamps.toMillis(hubEvent.getTimestamp()))
                 .setPayload(new ScenarioRemovedEventAvro(event.getName()))
                 .build();
     }
