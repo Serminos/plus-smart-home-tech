@@ -12,27 +12,38 @@ import java.util.Optional;
 
 @Component
 public class AggregatorEventHandler {
-    Map<String, SensorsSnapshotAvro> snapshots = new HashMap<>();
+
+    private final Map<String, SensorsSnapshotAvro> snapshots = new HashMap<>();
 
     public Optional<SensorsSnapshotAvro> updateState(SensorEventAvro event) {
+        String hubId = event.getHubId();
+        SensorsSnapshotAvro snapshot = snapshots.get(hubId);
 
-        SensorsSnapshotAvro snapshot = snapshots.getOrDefault(event.getHubId()
-                , createSensorSnapshotAvro(event.getHubId())); // проверили есть ли снапшот в мапе если нет создали новый
-
-        SensorStateAvro oldState = snapshot.getSensorsState().get(event.getId()); // взяли старое сотояние снепшота
-
-        if (oldState != null // если оно есть
-                && (oldState.getTimestamp() > event.getTimestamp() // и если оно случилось после текущего события
-                || oldState.getData().equals(event.getPayload()))) { // или если его даные равны данным текущего события
-            return Optional.empty(); // вернем пустой опшин
+        if (snapshot == null) {
+            snapshot = createSensorSnapshotAvro(hubId);
+            snapshots.put(hubId, snapshot);
         }
 
-        SensorStateAvro newState = createSensorStateAvro(event); // создаем новое состояние на основе данных события
-        snapshot.getSensorsState().put(event.getId(), newState); //добавляем его в снапшот
+        SensorStateAvro oldState = snapshot.getSensorsState().get(event.getId());
 
-        snapshot.setTimestamp(event.getTimestamp()); // обновляем таймстемп снапшота таймстемпом из события
-        snapshots.put(event.getHubId(), snapshot); // записываем снапшот в мапу
-        return Optional.of(snapshot); // возвращаем снапшот
+        if (isStateUpdateRequired(event, oldState)) {
+            SensorStateAvro newState = createSensorStateAvro(event);
+            snapshot.getSensorsState().put(event.getId(), newState);
+            snapshot.setTimestamp(event.getTimestamp());
+            return Optional.of(snapshot);
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isStateUpdateRequired(SensorEventAvro event, SensorStateAvro oldState) {
+        if (oldState == null) {
+            return true;
+        }
+        if (oldState.getTimestamp() < event.getTimestamp()) {
+            return true;
+        }
+        return !oldState.getData().equals(event.getPayload());
     }
 
     private SensorsSnapshotAvro createSensorSnapshotAvro(String hubId) {
@@ -50,4 +61,3 @@ public class AggregatorEventHandler {
                 .build();
     }
 }
-
