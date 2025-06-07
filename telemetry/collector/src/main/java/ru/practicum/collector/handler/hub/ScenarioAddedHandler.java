@@ -1,6 +1,7 @@
 package ru.practicum.collector.handler.hub;
 
 import com.google.protobuf.util.Timestamps;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.*;
@@ -15,8 +16,11 @@ import java.util.stream.Collectors;
 @Component
 public class ScenarioAddedHandler extends BaseHubHandler {
 
-    public ScenarioAddedHandler(KafkaTemplate<String, HubEventAvro> kafkaTemplate) {
-        super(kafkaTemplate);
+    public ScenarioAddedHandler(
+            KafkaTemplate<String, HubEventAvro> kafkaTemplate,
+            @Value("${kafka.topic.hubs:telemetry.hubs.v1}") String hubTopic
+    ) {
+        super(kafkaTemplate, hubTopic);
     }
 
     @Override

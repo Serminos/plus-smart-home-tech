@@ -10,26 +10,29 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AggregatorAvroSerializer implements Serializer<SpecificRecordBase> {
+    private final Map<String, DatumWriter<SpecificRecordBase>> writersCache = new ConcurrentHashMap<>();
     private final EncoderFactory encoderFactory = EncoderFactory.get();
-    private BinaryEncoder encoder;
+
     @Override
     public byte[] serialize(String topic, SpecificRecordBase data) {
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] result = null;
-            encoder = encoderFactory.binaryEncoder(out, encoder);
+        if (data == null) return null;
 
-            if(data != null) {
-                DatumWriter<SpecificRecordBase> writer = new SpecificDatumWriter<>(data.getSchema());
-                writer.write(data, encoder);
-                encoder.flush();
-                result = out.toByteArray();
-            }
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            BinaryEncoder encoder = encoderFactory.directBinaryEncoder(out, null);
+            DatumWriter<SpecificRecordBase> writer = writersCache.computeIfAbsent(
+                    data.getSchema().getFullName(),
+                    k -> new SpecificDatumWriter<>(data.getSchema())
+            );
 
-            return result;
+            writer.write(data, encoder);
+            encoder.flush();
+            return out.toByteArray();
         } catch (IOException e) {
-            throw new SerializationException("Ошибка сериализации данных для топика [" + topic + "]", e);
+            throw new SerializationException("Serialization error for topic: " + topic, e);
         }
     }
 }

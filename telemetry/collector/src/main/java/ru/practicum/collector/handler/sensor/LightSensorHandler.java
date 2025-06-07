@@ -1,6 +1,5 @@
 package ru.practicum.collector.handler.sensor;
 
-import com.google.protobuf.util.Timestamps;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.LightSensorAvro;
@@ -19,10 +18,7 @@ public class LightSensorHandler extends BaseSensorHandler {
     public SensorEventAvro toSensorEventAvro(SensorEventProto sensorEvent) {
         LightSensorEventProto event = sensorEvent.getLightSensorEvent();
 
-        return SensorEventAvro.newBuilder()
-                .setId(sensorEvent.getId())
-                .setHubId(sensorEvent.getHubId())
-                .setTimestamp(Timestamps.toMillis(sensorEvent.getTimestamp()))
+        return createBaseBuilder(sensorEvent)
                 .setPayload(new LightSensorAvro(event.getLinkQuality(), event.getLuminosity()))
                 .build();
     }

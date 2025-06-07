@@ -50,7 +50,7 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
 
         if (scenarioOpt.isEmpty()) {
             Scenario scenario = toScenario(hubEventAvro, scenarioAddedEventAvro);
-            log.info("создали новый сценарий {} ", scenario.getName());
+            log.debug("создали новый сценарий {} ", scenario.getName());
             scenarioRepository.save(scenario);
         } else {
             Scenario scenario = scenarioOpt.get();
@@ -65,7 +65,7 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
                     .toList());
             scenario.setConditions(conditions);
             scenario.setActions(actions);
-            log.info("обнавили сценарий {} ", scenario.getName());
+            log.debug("обнавили сценарий {} ", scenario.getName());
             scenarioRepository.save(scenario);
 
             deleteUnusedConditions(oldConditionIds);

@@ -6,7 +6,6 @@ import ru.yandex.practicum.handler.sensor.SensorEventHandler;
 import ru.yandex.practicum.kafka.telemetry.event.SensorStateAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
 import ru.yandex.practicum.model.Condition;
-import ru.yandex.practicum.model.Enum.ConditionOperation;
 import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.producer.ScenarioActionProducer;
 import ru.yandex.practicum.repository.ScenarioRepository;
@@ -37,26 +36,24 @@ public class SnapshotHandler {
 
     public void handleSnapshot(SensorsSnapshotAvro sensorsSnapshotAvro) {
         List<Scenario> scenarios = getScenariosBySnapshots(sensorsSnapshotAvro);
-        log.info("Количество сценариев для выполнения {}", scenarios.size());
-        for (Scenario scenario : scenarios) {
-            scenarioActionProducer.sendAction(scenario);
-        }
+        log.debug("Количество сценариев для выполнения {}", scenarios.size());
+        scenarios.forEach(scenarioActionProducer::sendAction);
     }
 
     private List<Scenario> getScenariosBySnapshots(SensorsSnapshotAvro sensorsSnapshotAvro) {
-        log.info("hubId {}", sensorsSnapshotAvro.getHubId());
+        log.debug("hubId {}", sensorsSnapshotAvro.getHubId());
         return scenarioRepository.findByHubId(sensorsSnapshotAvro.getHubId()).stream()
                 .filter(scenario -> checkConditions(scenario.getConditions(), sensorsSnapshotAvro.getSensorsState()))
                 .toList();
     }
 
     private boolean checkConditions(List<Condition> conditions, Map<String, SensorStateAvro> sensorStates) {
-        log.info("количество условий {}", conditions.size());
+        log.debug("количество условий {}", conditions.size());
 
         return conditions.stream().allMatch(condition -> {
             try {
-                log.info("id {}", condition.getSensor().getId());
-                log.info("avro {}", sensorStates.get(condition.getSensor().getId()));
+                log.debug("id {}", condition.getSensor().getId());
+                log.debug("avro {}", sensorStates.get(condition.getSensor().getId()));
                 return checkCondition(condition, sensorStates.get(condition.getSensor().getId()));
             } catch (Exception e) {
                 log.error(e.getMessage());
@@ -72,13 +69,13 @@ public class SnapshotHandler {
         }
 
         Integer value = sensorEventHandlers.get(type).getSensorValue(condition.getType(), sensorStateAvro);
-        log.info("проверить условие {} для состояния датчика {}", condition, sensorStateAvro);
+        log.debug("проверить условие {} для состояния датчика {}", condition, sensorStateAvro);
 
         if (value == null) {
             return false;
         }
 
-        log.info("значение условия = {}, значение датчика = {}", condition.getValue(), value);
+        log.debug("значение условия = {}, значение датчика = {}", condition.getValue(), value);
         return switch (condition.getOperation()) {
             case LOWER_THAN -> value < condition.getValue();
             case EQUALS -> value.equals(condition.getValue());

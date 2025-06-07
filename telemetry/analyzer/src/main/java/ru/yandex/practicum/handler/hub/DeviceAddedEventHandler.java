@@ -23,7 +23,7 @@ public class DeviceAddedEventHandler implements HubEventHandler {
     @Override
     @Transactional
     public void handle(HubEventAvro hubEventAvro) {
-        log.info("save hubEventAvro id = {}", hubEventAvro.getHubId());
+        log.debug("save hubEventAvro id = {}", hubEventAvro.getHubId());
         sensorRepository.save(toSensor(hubEventAvro));
     }
 

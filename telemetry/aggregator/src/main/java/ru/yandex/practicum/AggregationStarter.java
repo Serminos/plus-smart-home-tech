@@ -60,19 +60,22 @@ public class AggregationStarter {
                 consumer.commitSync();
             }
         } catch (WakeupException ignored) {
-            // игнорируем - закрываем консьюмер и продюсер в блоке finally
+            log.info("Consumer woken up for shutdown");
         } catch (Exception e) {
-            log.error("Ошибка во время обработки событий от датчиков", e);
+            log.error("Sensor events processing error", e);
         } finally {
-            try {
-                producer.flush();
-                consumer.commitSync();
-            } finally {
-                log.info("Закрываем консьюмер");
-                consumer.close();
-                log.info("Закрываем продюсер");
-                producer.close();
-            }
+            closeResources();
+        }
+    }
+
+    private void closeResources() {
+        try {
+            producer.flush();
+            consumer.commitSync();
+        } finally {
+            consumer.close();
+            producer.close();
+            log.info("Resources closed");
         }
     }
 }
