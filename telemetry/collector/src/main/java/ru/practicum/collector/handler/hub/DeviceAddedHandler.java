@@ -1,5 +1,6 @@
 package ru.practicum.collector.handler.hub;
 
+import com.google.protobuf.util.Timestamps;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.DeviceAddedEventAvro;
@@ -8,8 +9,6 @@ import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.protobuf.telemetry.event.DeviceAddedEventProto;
 import ru.yandex.practicum.protobuf.telemetry.event.DeviceTypeProto;
 import ru.yandex.practicum.protobuf.telemetry.event.HubEventProto;
-
-import com.google.protobuf.util.Timestamps;
 
 @Component
 public class DeviceAddedHandler extends BaseHubHandler {
