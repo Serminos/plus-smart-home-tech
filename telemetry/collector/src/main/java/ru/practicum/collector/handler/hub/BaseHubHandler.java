@@ -1,19 +1,15 @@
 package ru.practicum.collector.handler.hub;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import ru.practicum.collector.handler.HubEventHandler;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.protobuf.telemetry.event.HubEventProto;
 
-import java.time.Instant;
-
 @RequiredArgsConstructor
 public abstract class BaseHubHandler implements HubEventHandler {
-    private final KafkaTemplate<String, HubEventAvro> kafkaTemplate;
-    @Value("${kafka.topic.hubs:telemetry.hubs.v1}")
-    private String hubTopic;
+    protected final KafkaTemplate<String, HubEventAvro> kafkaTemplate;
+    protected final String hubTopic;
 
     @Override
     public void handle(HubEventProto hubEvent) {
