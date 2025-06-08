@@ -9,6 +9,9 @@ import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.model.Sensor;
 import ru.yandex.practicum.repository.SensorRepository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,6 +26,15 @@ public class DeviceAddedEventHandler implements HubEventHandler {
     @Override
     @Transactional
     public void handle(HubEventAvro hubEventAvro) {
+        DeviceAddedEventAvro event = (DeviceAddedEventAvro) hubEventAvro.getPayload();
+        String sensorId = event.getId();
+        String hubId = hubEventAvro.getHubId();
+
+        boolean isDeviceExists = sensorRepository.existsByIdInAndHubId(List.of(sensorId), hubId);
+        if (isDeviceExists) {
+            log.info("Sensor allready exist: hubId={}, sensorId={}", hubId, sensorId);
+            return;
+        }
         log.debug("save hubEventAvro id = {}", hubEventAvro.getHubId());
         sensorRepository.save(toSensor(hubEventAvro));
     }

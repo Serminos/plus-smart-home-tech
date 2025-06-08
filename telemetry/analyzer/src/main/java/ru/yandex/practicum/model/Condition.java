@@ -2,8 +2,8 @@ package ru.yandex.practicum.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.yandex.practicum.model.Enum.ConditionOperation;
-import ru.yandex.practicum.model.Enum.ConditionType;
+import ru.yandex.practicum.model.enums.ConditionOperation;
+import ru.yandex.practicum.model.enums.ConditionType;
 
 import java.util.List;
 

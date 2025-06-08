@@ -40,8 +40,8 @@ public abstract class AbstractEventProcessor<T> implements Runnable {
         }
 
         try {
-            consumer.subscribe(Collections.singletonList(topicName));
             Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
+            consumer.subscribe(Collections.singletonList(topicName));
             log.info("Started consuming from topic: {}", topicName);
             processMessages();
         } catch (WakeupException e) {

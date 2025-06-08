@@ -26,19 +26,21 @@ public class AggregationStarter {
     private final AggregatorEventHandler eventHandler;
     private final Producer<String, SpecificRecordBase> producer;
     private final Consumer<String, SpecificRecordBase> consumer;
-    private final Duration CONSUME_ATTEMPT_TIMEOUT = Duration.ofMillis(1000);
+    @Value("${kafka.consumer.poll-timeout:1000}")
+    private long pollTimeoutMs;
     @Value("${kafka.telemetry-sensors-topic}")
     private String telemetrySensorsTopic;
     @Value("${kafka.telemetry-snapshots-topic}")
     private String telemetrySnapshotTopic;
 
     public void start() {
+        Duration consumeAttemptTimeout = Duration.ofMillis(pollTimeoutMs);
 
         try {
-            consumer.subscribe(List.of(telemetrySensorsTopic));
             Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
+            consumer.subscribe(List.of(telemetrySensorsTopic));
             while (true) {
-                ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(CONSUME_ATTEMPT_TIMEOUT);
+                ConsumerRecords<String, SpecificRecordBase> records = consumer.poll(consumeAttemptTimeout);
 
                 for (ConsumerRecord<String, SpecificRecordBase> record : records) {
                     log.info("обрабатываем сообщение {}", record.value());
