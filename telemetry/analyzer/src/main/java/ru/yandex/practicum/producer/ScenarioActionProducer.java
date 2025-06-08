@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.model.Action;
-import ru.yandex.practicum.model.Enum.ActionType;
+import ru.yandex.practicum.model.enums.ActionType;
 import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.protobuf.telemetry.event.ActionTypeProto;
 import ru.yandex.practicum.protobuf.telemetry.event.DeviceActionProto;

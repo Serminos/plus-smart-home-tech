@@ -2,7 +2,7 @@ package ru.yandex.practicum.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.yandex.practicum.model.Enum.ActionType;
+import ru.yandex.practicum.model.enums.ActionType;
 
 import java.util.List;
 
