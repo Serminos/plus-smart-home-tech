@@ -33,7 +33,7 @@ public class WarehouseServiceImp implements WarehouseService {
 
     @Override
     public void addNewProductToWarehouse(NewProductInWarehouseRequest newProductInWarehouseRequest) {
-        UUID productId = UUID.fromString(newProductInWarehouseRequest.getProductId());
+        UUID productId = newProductInWarehouseRequest.getProductId();
         if (warehouseRepository.findById(productId).isPresent()) {
             throw new SpecifiedProductAlreadyInWarehouseException("Товар уже есть на складе: " + productId);
         }
@@ -44,39 +44,27 @@ public class WarehouseServiceImp implements WarehouseService {
     @Override
     public BookedProductsDto checkProductQuantityInWarehouse(ShoppingCartDto shoppingCartDto) {
         Map<UUID, Integer> productsInCart = shoppingCartDto.getProducts();
-        List<WarehouseProduct> warehouseProducts = warehouseRepository.findAllById(productsInCart.keySet());
-        Map<UUID, WarehouseProduct> warehouseMap = warehouseProducts.stream()
+        List<WarehouseProduct> warehouseProductsList = warehouseRepository.findAllById(productsInCart.keySet());
+        log.info("Товары из корзины имеющиеся на складе: {}", warehouseProductsList);
+        Map<UUID, WarehouseProduct> warehouseProductsMap = warehouseProductsList.stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
+        log.info("Создаем Map из товаров имеющиеся на складе: {}", warehouseProductsMap);
+        // проверка наличия продуктов на складе
+        checkAvailabilityProductsInWarehouse(productsInCart.keySet(), warehouseProductsMap.keySet());
+        // проверка количества продуктов на складе
+        checkQuantity(productsInCart, warehouseProductsMap);
 
-        // Проверка наличия
-        Set<UUID> missingIds = productsInCart.keySet().stream()
-                .filter(id -> !warehouseMap.containsKey(id))
-                .collect(Collectors.toSet());
-        if (!missingIds.isEmpty()) {
-            throw new NoSpecifiedProductInWarehouseException("Отсутствуют товары: " + missingIds);
-        }
-
-        // Проверка количества
-        List<UUID> insufficientIds = productsInCart.keySet().stream()
-                .filter(id -> productsInCart.get(id) > warehouseMap.get(id).getQuantity())
-                .collect(Collectors.toList());
-        if (!insufficientIds.isEmpty()) {
-            throw new ProductInShoppingCartLowQuantityInWarehouse("Недостаточно товаров: " + insufficientIds);
-        }
-
-        return bookingProducts(warehouseProducts);
+        return bookingProducts(warehouseProductsList);
     }
 
     @Override
     public void addProductInWarehouse(AddProductToWarehouseRequest addProductRequest) {
-        UUID productId = UUID.fromString(addProductRequest.getProductId());
+        UUID productId = addProductRequest.getProductId();
         WarehouseProduct product = warehouseRepository.findById(productId).orElseThrow(
-                () -> new NoSpecifiedProductInWarehouseException("Товар уже есть на складе: " + productId));
-        log.info("Товар из склада: {}", product);
+                () -> new NoSpecifiedProductInWarehouseException("Товара нет на складе: " + productId));
         product.setQuantity(product.getQuantity() + addProductRequest.getQuantity());
         product = warehouseRepository.save(product);
         log.info("Обновленный товар: {}", product);
-        setProductQuantityState(product);
     }
 
     @Override
@@ -120,18 +108,17 @@ public class WarehouseServiceImp implements WarehouseService {
     }
 
     private BookedProductsDto bookingProducts(List<WarehouseProduct> products) {
-        double totalWeight = 0.0;
-        double totalVolume = 0.0;
-        boolean fragile = false;
-
+        BookedProductsDto result = new BookedProductsDto(0.0, 0.0, false);
         for (WarehouseProduct product : products) {
-            totalWeight += product.getWeight();
-            totalVolume += product.getWidth() * product.getHeight() * product.getDepth();
+            result.setDeliveryVolume(result.getDeliveryVolume() + product.getWeight());
+            result.setDeliveryVolume(result.getDeliveryVolume()
+                    + product.getWidth() * product.getHeight() * product.getDepth());
             if (product.getFragile()) {
-                fragile = true;
+                result.setFragile(true);
             }
         }
-        return new BookedProductsDto(totalWeight, totalVolume, fragile);
+        log.info("Общие данные о заказе: {}", result);
+        return result;
     }
 
     private void setProductQuantityState(WarehouseProduct product) {
@@ -146,6 +133,6 @@ public class WarehouseServiceImp implements WarehouseService {
         } else {
             quantityState = QuantityState.MANY;
         }
-        storeFeignClient.setProductQuantityState(new SetProductQuantityStateRequest(product.getProductId(), quantityState));
+        storeFeignClient.setProductQuantityState(product.getProductId(), quantityState);
     }
 }

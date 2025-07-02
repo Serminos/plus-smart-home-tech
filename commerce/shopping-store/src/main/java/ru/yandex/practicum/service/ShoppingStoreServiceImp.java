@@ -44,9 +44,6 @@ public class ShoppingStoreServiceImp implements ShoppingStoreService {
     @Override
     public List<ProductDto> findAllByProductCategory(ProductCategory productCategory, Pageable pageable) {
         List<Product> products = storeRepository.findAllByProductCategory(productCategory, pageable);
-        if (products.isEmpty()) {
-            throw new ProductNotFoundException("Не найден товары с категорией: " + productCategory);
-        }
         return ShoppingStoreMapper.mapToProductDto(products);
     }
 

@@ -30,23 +30,13 @@ public class ShoppingCartServiceImp implements ShoppingCartService {
             throw new IllegalArgumentException("productsMap не может быть null или пустым");
         }
         ShoppingCart shoppingCart = getActiveShoppingCartByUserName(username);
-
-        // Создаем временную копию продуктов
-        Map<UUID, Integer> tempProducts = new HashMap<>(shoppingCart.getProducts());
-        tempProducts.putAll(productsMap);
-
-        // Временный DTO для проверки
-        ShoppingCartDto tempDto = new ShoppingCartDto();
-        tempDto.setShoppingCartId(shoppingCart.getShoppingCartId().toString());
-        tempDto.setProducts(tempProducts);
-
-        // Проверка склада
-        BookedProductsDto bookedProductsDto = warehouseFeignClient.checkProductQuantityInWarehouse(tempDto);
-        log.info("Проверка наличия продуктов: {}", bookedProductsDto);
-
-        // Обновляем корзину
         shoppingCart.getProducts().putAll(productsMap);
+        log.info("Добавили новые позиции продуктов в корзину: {}", shoppingCart);
+        BookedProductsDto bookedProductsDto = warehouseFeignClient
+                .checkProductQuantityInWarehouse(ShoppingCartMapper.mapToShoppingCartDto(shoppingCart));
+        log.info("Проверили наличие продуктов на складе: {}", bookedProductsDto);
         shoppingCart = cartRepository.save(shoppingCart);
+        log.info("Сохранили корзину в БД: {}", shoppingCart);
         return ShoppingCartMapper.mapToShoppingCartDto(shoppingCart);
     }
 
@@ -89,38 +79,20 @@ public class ShoppingCartServiceImp implements ShoppingCartService {
                                                                ChangeProductQuantityRequest changeQuantityRequest) {
         checkUsername(username);
         ShoppingCart shoppingCart = getActiveShoppingCartByUserName(username);
-        UUID productId = changeQuantityRequest.getProductId();
-        int newQuantity = changeQuantityRequest.getNewQuantity();
-
-        if (!shoppingCart.getProducts().containsKey(productId)) {
-            throw new NoProductsInShoppingCartException("Товар отсутствует: " + productId);
+        if (!shoppingCart.getProducts().containsKey(changeQuantityRequest.getProductId())) {
+            throw new NoProductsInShoppingCartException("В корзине нет товара с id: " + changeQuantityRequest.getProductId());
         }
-
-        // Временная копия для проверки
-        Map<UUID, Integer> tempProducts = new HashMap<>(shoppingCart.getProducts());
-        if (newQuantity == 0) {
-            tempProducts.remove(productId);
-        } else {
-            tempProducts.put(productId, newQuantity);
-        }
-
-        // Проверка склада
-        ShoppingCartDto tempDto = new ShoppingCartDto();
-        tempDto.setShoppingCartId(shoppingCart.getShoppingCartId().toString());
-        tempDto.setProducts(tempProducts);
-        warehouseFeignClient.checkProductQuantityInWarehouse(tempDto);
-
-        // Обновляем корзину
-        if (newQuantity == 0) {
-            shoppingCart.getProducts().remove(productId);
-        } else {
-            shoppingCart.getProducts().put(productId, newQuantity);
-        }
+        shoppingCart.getProducts().put(changeQuantityRequest.getProductId(), changeQuantityRequest.getNewQuantity());
+        BookedProductsDto bookedProductsDto = warehouseFeignClient
+                .checkProductQuantityInWarehouse(ShoppingCartMapper.mapToShoppingCartDto(shoppingCart));
+        log.info("Проверили наличие продуктов на складе: {}", bookedProductsDto);
         shoppingCart = cartRepository.save(shoppingCart);
+        log.info("Обновленная корзина: {}", shoppingCart);
         return ShoppingCartMapper.mapToShoppingCartDto(shoppingCart);
     }
 
     private void checkUsername(String username) {
+        log.info("Проверка имени пользователя: {}", username);
         if (username == null || username.isBlank()) {
             throw new NotAuthorizedUserException("Имя пользователя не может быть null или пустым");
         }

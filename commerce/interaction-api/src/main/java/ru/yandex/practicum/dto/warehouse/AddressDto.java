@@ -18,5 +18,6 @@ public class AddressDto {
     private String street;
     @NotBlank
     private String house;
+    @NotNull
     private String flat;
 }

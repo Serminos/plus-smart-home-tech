@@ -13,7 +13,7 @@ public class WarehouseMapper {
         WarehouseProduct product = new WarehouseProduct();
         DimensionDto dimension = newProductRequest.getDimension();
 
-        product.setProductId(UUID.fromString(newProductRequest.getProductId()));
+        product.setProductId(newProductRequest.getProductId());
         product.setFragile(newProductRequest.getFragile());
         product.setWidth(dimension.getWidth());
         product.setHeight(dimension.getHeight());

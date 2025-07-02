@@ -1,11 +1,13 @@
-package ru.yandex.practicum.api.shoppingStore;
+package ru.yandex.practicum.api;
 
 import jakarta.validation.Valid;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.shoppingStore.ProductCategory;
 import ru.yandex.practicum.dto.shoppingStore.ProductDto;
-import ru.yandex.practicum.dto.shoppingStore.SetProductQuantityStateRequest;
+import ru.yandex.practicum.dto.shoppingStore.ProductListResponse;
+import ru.yandex.practicum.dto.shoppingStore.QuantityState;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,7 +15,7 @@ import java.util.UUID;
 public interface ShoppingStoreApi {
 
     @GetMapping("/api/v1/shopping-store")
-    List<ProductDto> findAllByProductCategory(
+    ProductListResponse findAllByProductCategory(
             @RequestParam(name = "category") ProductCategory productCategory,
             Pageable pageable);
 
@@ -31,5 +33,6 @@ public interface ShoppingStoreApi {
     Boolean removeProductFromStore(@RequestBody UUID productId);
 
     @PostMapping("/api/v1/shopping-store/quantityState")
-    Boolean setProductQuantityState(@Valid @RequestBody SetProductQuantityStateRequest quantityStateRequest);
+    Boolean setProductQuantityState(@RequestParam UUID productId,
+                                    @RequestParam QuantityState quantityState);
 }

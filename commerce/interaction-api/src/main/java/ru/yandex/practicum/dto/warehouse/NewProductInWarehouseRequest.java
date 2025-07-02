@@ -7,12 +7,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @ToString
 public class NewProductInWarehouseRequest {
-    @NotBlank
-    private String productId;
+    @NotNull
+    private UUID productId;
     @NotNull
     private Boolean fragile;
     @NotNull

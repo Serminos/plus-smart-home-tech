@@ -1,7 +1,7 @@
 package ru.yandex.practicum.feignClient;
 
 import org.springframework.cloud.openfeign.FeignClient;
-import ru.yandex.practicum.api.shoppingStore.ShoppingStoreApi;
+import ru.yandex.practicum.api.ShoppingStoreApi;
 
 @FeignClient(name = "shopping-store")
 public interface ShoppingStoreFeignClient extends ShoppingStoreApi {

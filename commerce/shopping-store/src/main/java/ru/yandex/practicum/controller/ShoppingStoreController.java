@@ -3,13 +3,13 @@ package ru.yandex.practicum.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.RestController;
-import ru.yandex.practicum.api.shoppingStore.ShoppingStoreApi;
-import ru.yandex.practicum.dto.shoppingStore.ProductCategory;
-import ru.yandex.practicum.dto.shoppingStore.ProductDto;
-import ru.yandex.practicum.dto.shoppingStore.SetProductQuantityStateRequest;
+import ru.yandex.practicum.api.ShoppingStoreApi;
+import ru.yandex.practicum.dto.shoppingStore.*;
 import ru.yandex.practicum.service.ShoppingStoreService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,9 +20,25 @@ public class ShoppingStoreController implements ShoppingStoreApi {
     private final ShoppingStoreService storeService;
 
     @Override
-    public List<ProductDto> findAllByProductCategory(ProductCategory productCategory, Pageable pageable) {
+    public ProductListResponse findAllByProductCategory(ProductCategory productCategory, Pageable pageable) {
         log.debug("Получение списка товаров по типу в пагинированном виде: {}, {}", productCategory, pageable);
-        return storeService.findAllByProductCategory(productCategory, pageable);
+        List<ProductDto> products = storeService.findAllByProductCategory(productCategory, pageable);
+
+        Sort sort = pageable.getSort();
+        List<Sort.Order> orders = sort.toList();
+        ProductListResponse response = new ProductListResponse();
+        response.setContent(products);
+
+        List<SortDto> sortDtos = new ArrayList<>();
+        for (Sort.Order order : orders) {
+            SortDto sortDto = new SortDto();
+            sortDto.setDirection(order.getDirection().name());
+            sortDto.setProperty(order.getProperty());
+            sortDtos.add(sortDto);
+        }
+        response.setSort(sortDtos);
+
+        return response;
     }
 
     @Override
@@ -44,7 +60,9 @@ public class ShoppingStoreController implements ShoppingStoreApi {
     }
 
     @Override
-    public Boolean setProductQuantityState(SetProductQuantityStateRequest quantityStateRequest) {
+    public Boolean setProductQuantityState(UUID productId,
+                                           QuantityState quantityState) {
+        SetProductQuantityStateRequest quantityStateRequest = new SetProductQuantityStateRequest(productId, quantityState);
         log.debug("Установка статуса по товару. API вызывается со стороны склада: {}", quantityStateRequest);
         return storeService.setProductQuantityState(quantityStateRequest);
     }
