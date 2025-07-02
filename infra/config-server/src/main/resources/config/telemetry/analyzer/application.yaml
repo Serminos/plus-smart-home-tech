@@ -1,57 +1,51 @@
-grpc:
-  client:
-    hub-router:
-      address: static://localhost:59090
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
-kafka:
-  consumer:
-    close-timeout: 5000
-    hub-client-id-config: hub-event-consumer
-    hub-group-id: hub-analyzer-group
-    hub-key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    hub-value-deserializer: ru.yandex.practicum.deserializer.HubEventDeserializer
-    poll-timeout: 1000
-    snapshot-client-id-config: snapshot-consumer
-    snapshot-group-id: snapshot-analyzer-group
-    snapshot-key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    snapshot-value-deserializer: ru.yandex.practicum.deserializer.SensorSnapshotDeserializer
-  producer:
-    bootstrap-server: localhost:9092
-  topic:
-    snapshots: telemetry.snapshots.v1
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-      springframework:
-        orm:
-          jpa: INFO
-          jpa.JpaTransactionManager: DEBUG
-        transaction: INFO
-        transaction.interceptor: TRACE
-retry:
-  initial-interval: 1000
-  max-attempts: 3
-  multiplier: 2
 spring:
-  datasource:
-    driverClassName: org.postgresql.Driver
-    password: postgres
-    url: jdbc:postgresql://localhost:5433/analyzer
-    username: postgres
+  output:
+    ansi:
+      enabled: always
   jpa:
     hibernate:
       ddl-auto: none
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
-    show-sql: true
-  output:
-    ansi:
-      enabled: ALWAYS
   sql:
     init:
       mode: always
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/smart-home-tech
+    username: smart-home-tech
+    password: smart-home-tech
+
+grpc:
+  client:
+    hub-router:
+      address: 'static://localhost:59090'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
+collector:
+  kafka:
+    consumer:
+      hub:
+        properties:
+          client.id: analyzerHubConsumer
+          group.id: analyzer-hub
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value.deserializer: deserializer.HubEventDeserializer
+          enable.auto.commit: false
+      snapshot:
+        properties:
+          client.id: analyzerSnapshotConsumer
+          group.id: analyzer-snapshot
+          bootstrap.servers: localhost:9092
+          key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value.deserializer: deserializer.SnapshotEventDeserializer
+          enable.auto.commit: false
+    topics:
+      sensors-events: telemetry.sensors.v1
+      hubs-events: telemetry.hubs.v1
+      snapshots-events: telemetry.snapshots.v1

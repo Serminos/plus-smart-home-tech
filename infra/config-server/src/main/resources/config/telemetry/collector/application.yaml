@@ -1,20 +1,19 @@
+kafka:
+  producer:
+    properties:
+      bootstrap.servers: localhost:9092
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: serializer.GeneralAvroSerializer
+  topics:
+    sensors-events: telemetry.sensors.v1
+    hubs-events: telemetry.hubs.v1
+    snapshots-events: telemetry.snapshots.v1
+
 grpc:
   server:
     port: 59091
-kafka:
-  group-id: collector-sensor-group
-  producer:
-    bootstrap-server: localhost:9092
-    key-serializer: org.apache.kafka.common.serialization.StringSerializer
-    value-serializer: ru.yandex.practicum.serializer.CollectorAvroSerializer
-  topic:
-    hubs: telemetry.hubs.v1
-    sensors: telemetry.sensors.v1
-logging:
-  level:
-    org:
-      springframework:
-        web: DEBUG
+
 spring:
-  application:
-    name: plus-smart-home-tech
+  output:
+    ansi:
+      enabled: always
