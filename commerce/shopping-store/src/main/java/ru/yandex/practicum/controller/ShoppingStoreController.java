@@ -68,7 +68,7 @@ public class ShoppingStoreController implements ShoppingStoreApi {
     }
 
     @Override
-    public ProductDto findProductById(String productId) {
+    public ProductDto findProductById(UUID productId) {
         log.debug("Получить сведения по товару из БД: {}", productId);
         return storeService.findProductById(productId);
     }

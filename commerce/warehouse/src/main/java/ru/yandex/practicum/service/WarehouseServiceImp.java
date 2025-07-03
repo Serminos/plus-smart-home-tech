@@ -12,6 +12,7 @@ import ru.yandex.practicum.dto.warehouse.BookedProductsDto;
 import ru.yandex.practicum.dto.warehouse.NewProductInWarehouseRequest;
 import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
+import ru.yandex.practicum.exception.ProductNotFoundException;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
 import ru.yandex.practicum.feignClient.ShoppingStoreFeignClient;
 import ru.yandex.practicum.mapper.WarehouseMapper;
@@ -65,6 +66,7 @@ public class WarehouseServiceImp implements WarehouseService {
         product.setQuantity(product.getQuantity() + addProductRequest.getQuantity());
         product = warehouseRepository.save(product);
         log.info("Обновленный товар: {}", product);
+        setProductQuantityState(product);
     }
 
     @Override
@@ -96,7 +98,7 @@ public class WarehouseServiceImp implements WarehouseService {
     private void checkQuantity(Map<UUID, Integer> productsInCart, Map<UUID, WarehouseProduct> warehouseProductsMap) {
         List<UUID> notAvailabilityProducts = new ArrayList<>();
         for (UUID id : productsInCart.keySet()) {
-            if (productsInCart.get(id) < warehouseProductsMap.get(id).getQuantity()) {
+            if (productsInCart.get(id) > warehouseProductsMap.get(id).getQuantity()) {
                 notAvailabilityProducts.add(id);
             }
         }
@@ -133,6 +135,10 @@ public class WarehouseServiceImp implements WarehouseService {
         } else {
             quantityState = QuantityState.MANY;
         }
-        storeFeignClient.setProductQuantityState(product.getProductId(), quantityState);
+        try {
+            storeFeignClient.setProductQuantityState(product.getProductId(), quantityState);
+        } catch (Exception exception) {
+            log.info("Товар ещё не добавили в магазин: {}", product.getProductId());
+        }
     }
 }

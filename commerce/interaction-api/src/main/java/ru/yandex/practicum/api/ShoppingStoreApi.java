@@ -23,8 +23,7 @@ public interface ShoppingStoreApi {
     ProductDto createProduct(@Valid @RequestBody ProductDto productDto);
 
     @GetMapping("/api/v1/shopping-store/{productId}")
-    ProductDto findProductById(@PathVariable("productId") String productId);
-
+    ProductDto findProductById(@PathVariable("productId") UUID productId);
 
     @PostMapping("/api/v1/shopping-store")
     ProductDto updateProduct(@Valid @RequestBody ProductDto productDto);
