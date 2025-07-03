@@ -1,7 +1,6 @@
 package ru.yandex.practicum.api;
 
 import jakarta.validation.Valid;
-import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.shoppingStore.ProductCategory;
@@ -9,7 +8,6 @@ import ru.yandex.practicum.dto.shoppingStore.ProductDto;
 import ru.yandex.practicum.dto.shoppingStore.ProductListResponse;
 import ru.yandex.practicum.dto.shoppingStore.QuantityState;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface ShoppingStoreApi {
