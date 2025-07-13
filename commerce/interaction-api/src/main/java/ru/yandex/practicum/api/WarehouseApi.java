@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.dto.shoppingCart.ShoppingCartDto;
-import ru.yandex.practicum.dto.warehouse.AddProductToWarehouseRequest;
-import ru.yandex.practicum.dto.warehouse.AddressDto;
-import ru.yandex.practicum.dto.warehouse.BookedProductsDto;
-import ru.yandex.practicum.dto.warehouse.NewProductInWarehouseRequest;
+import ru.yandex.practicum.dto.warehouse.*;
+
+import java.util.Map;
+import java.util.UUID;
 
 public interface WarehouseApi {
 
@@ -24,4 +24,10 @@ public interface WarehouseApi {
 
     @GetMapping("/api/v1/warehouse/address")
     AddressDto getAddressWarehouse();
+
+    @PostMapping("/api/v1/warehouse/assembly")
+    BookedProductsDto assemblingProductsForTheOrder(@Valid @RequestBody AssemblyProductsForOrderRequest assemblyRequest);
+
+    @PostMapping("/api/v1/warehouse/return")
+    void returnProductsToTheWarehouse(@RequestBody Map<UUID, Integer> returnedProducts);
 }
