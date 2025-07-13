@@ -1,0 +1,13 @@
+kafka:
+  consumer:
+    client-id-config: sensor-event-consumer
+    group-id: aggregator-group
+    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    poll-timeout: 1000
+    value-deserializer: ru.yandex.practicum.serializer.SensorEventDeserializer
+  producer:
+    bootstrap-server: localhost:9092
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: ru.yandex.practicum.serializer.AggregatorAvroSerializer
+  telemetry-sensors-topic: telemetry.sensors.v1
+  telemetry-snapshots-topic: telemetry.snapshots.v1
