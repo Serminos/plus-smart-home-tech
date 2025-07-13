@@ -30,4 +30,8 @@ public interface WarehouseApi {
 
     @PostMapping("/api/v1/warehouse/return")
     void returnProductsToTheWarehouse(@RequestBody Map<UUID, Integer> returnedProducts);
+
+    @PostMapping("/api/v1/warehouse/shipped")
+    void shippedProductsToTheWarehouse(@Valid @RequestBody ShippedToDeliveryRequest deliveryRequest);
+
 }

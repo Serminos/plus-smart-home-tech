@@ -1,10 +1,9 @@
-create TABLE IF NOT EXISTS warehouse_products
+create TABLE IF NOT EXISTS payments
 (
-    product_id UUID PRIMARY KEY,
-    fragile BOOLEAN,
-    width DOUBLE PRECISION,
-    height DOUBLE PRECISION,
-    depth DOUBLE PRECISION,
-    weight DOUBLE PRECISION,
-    quantity INTEGER
+    payment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL,
+    total_price DOUBLE PRECISION,
+    delivery_price DOUBLE PRECISION,
+    product_price DOUBLE PRECISION,
+    payment_state VARCHAR NOT NULL
 );

@@ -6,12 +6,15 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.dto.shoppingCart.ShoppingCartDto;
 import ru.yandex.practicum.dto.shoppingStore.QuantityState;
 import ru.yandex.practicum.dto.warehouse.*;
+import ru.yandex.practicum.exception.NoOrderFoundException;
 import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
 import ru.yandex.practicum.feignClient.ShoppingStoreFeignClient;
 import ru.yandex.practicum.mapper.WarehouseMapper;
+import ru.yandex.practicum.model.OrderBooking;
 import ru.yandex.practicum.model.WarehouseProduct;
+import ru.yandex.practicum.repository.OrderBookingRepository;
 import ru.yandex.practicum.repository.WarehouseRepository;
 
 import java.security.SecureRandom;
@@ -26,6 +29,18 @@ public class WarehouseServiceImp implements WarehouseService {
     private final WarehouseRepository warehouseRepository;
     private final ShoppingStoreFeignClient storeFeignClient;
     private AddressDto warehouseAddress = settingAddress();
+    private final OrderBookingRepository bookingRepository;
+
+
+    @Override
+    public void shippedProductsToTheWarehouse(ShippedToDeliveryRequest deliveryRequest) {
+        OrderBooking orderBooking = bookingRepository.findById(deliveryRequest.getOrderId()).orElseThrow(() ->
+                new NoOrderFoundException("Не найдено бронирование с указанным id заказа: " + deliveryRequest.getOrderId()));
+        log.info("Старый OrderBooking: {}", orderBooking);
+        orderBooking.setDeliveryId(deliveryRequest.getDeliveryId());
+        orderBooking = bookingRepository.save(orderBooking);
+        log.info("Обновляем OrderBooking в БД: {}", orderBooking);
+    }
 
     @Override
     public void addNewProductToWarehouse(NewProductInWarehouseRequest newProductInWarehouseRequest) {
@@ -170,7 +185,7 @@ public class WarehouseServiceImp implements WarehouseService {
         return warehouseRepository.saveAll(warehouseProductsMap.values());
     }
 
-    private BookedProductsDto bookingProducts(Map<UUID, Integer>  products,
+    private BookedProductsDto bookingProducts(Map<UUID, Integer> products,
                                               Map<UUID, WarehouseProduct> warehouseProductsMap) {
         BookedProductsDto result = new BookedProductsDto(0.0, 0.0, false);
         for (UUID id : products.keySet()) {

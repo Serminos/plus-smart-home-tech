@@ -53,5 +53,11 @@ public class WarehouseController implements WarehouseApi {
         log.info("Запрос на возврат товаров: {}", returnedProducts);
         warehouseService.returnProductsToTheWarehouse(returnedProducts);
     }
+
+    @Override
+    public void shippedProductsToTheWarehouse(ShippedToDeliveryRequest deliveryRequest){
+        log.info("Запрос на передачу заказа в доставку: {}", deliveryRequest);
+        warehouseService.shippedProductsToTheWarehouse(deliveryRequest);
+    }
 }
 

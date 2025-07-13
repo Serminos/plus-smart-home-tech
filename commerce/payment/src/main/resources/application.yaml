@@ -1,6 +1,6 @@
 spring:
   application:
-    name: warehouse
+    name: payment
   config:
     import: "configserver:"
   cloud:

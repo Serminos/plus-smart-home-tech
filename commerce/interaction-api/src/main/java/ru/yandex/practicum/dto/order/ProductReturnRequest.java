@@ -1,4 +1,5 @@
-package ru.yandex.practicum.dto.warehouse;
+package ru.yandex.practicum.dto.order;
+
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -11,12 +12,10 @@ import java.util.UUID;
 @Getter
 @Setter
 @ToString
-public class AssemblyProductsForOrderRequest {
+public class ProductReturnRequest {
     @NotNull
     private UUID orderId;
+
     @NotNull
     private Map<UUID, Integer> products;
-
-    public AssemblyProductsForOrderRequest(UUID orderId, Map<UUID, Integer> products) {
-    }
 }
