@@ -11,11 +11,20 @@ public class ErrorHandler {
     public record ErrorResponse(String message) {
     }
 
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler({
+            NoOrderFoundException.class
+    })
+    public ErrorResponse handleINotFoundException(final Exception e) {
+        return new ErrorResponse(e.getMessage());
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler({
             IllegalArgumentException.class,
             SpecifiedProductAlreadyInWarehouseException.class,
             ProductInShoppingCartLowQuantityInWarehouse.class,
+            ProductInShoppingCartNotInWarehouse.class,
             NoSpecifiedProductInWarehouseException.class,
             MethodArgumentNotValidException.class
     })

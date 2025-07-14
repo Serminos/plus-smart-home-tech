@@ -5,16 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.dto.shoppingCart.ShoppingCartDto;
 import ru.yandex.practicum.dto.shoppingStore.QuantityState;
-import ru.yandex.practicum.dto.warehouse.AddProductToWarehouseRequest;
-import ru.yandex.practicum.dto.warehouse.AddressDto;
-import ru.yandex.practicum.dto.warehouse.BookedProductsDto;
-import ru.yandex.practicum.dto.warehouse.NewProductInWarehouseRequest;
+import ru.yandex.practicum.dto.warehouse.*;
+import ru.yandex.practicum.exception.NoOrderFoundException;
 import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
+import ru.yandex.practicum.feignClient.OrderFeignClient;
 import ru.yandex.practicum.feignClient.ShoppingStoreFeignClient;
 import ru.yandex.practicum.mapper.WarehouseMapper;
+import ru.yandex.practicum.model.OrderBooking;
 import ru.yandex.practicum.model.WarehouseProduct;
+import ru.yandex.practicum.repository.OrderBookingRepository;
 import ru.yandex.practicum.repository.WarehouseRepository;
 
 import java.security.SecureRandom;
@@ -29,6 +30,19 @@ public class WarehouseServiceImp implements WarehouseService {
     private final WarehouseRepository warehouseRepository;
     private final ShoppingStoreFeignClient storeFeignClient;
     private AddressDto warehouseAddress = settingAddress();
+    private final OrderBookingRepository bookingRepository;
+    private final OrderFeignClient orderFeignClient;
+
+
+    @Override
+    public void shippedProductsToTheWarehouse(ShippedToDeliveryRequest deliveryRequest) {
+        OrderBooking orderBooking = bookingRepository.findById(deliveryRequest.getOrderId()).orElseThrow(() ->
+                new NoOrderFoundException("Не найдено бронирование с указанным id заказа: " + deliveryRequest.getOrderId()));
+        log.info("Старый OrderBooking: {}", orderBooking);
+        orderBooking.setDeliveryId(deliveryRequest.getDeliveryId());
+        orderBooking = bookingRepository.save(orderBooking);
+        log.info("Обновляем OrderBooking в БД: {}", orderBooking);
+    }
 
     @Override
     public void addNewProductToWarehouse(NewProductInWarehouseRequest newProductInWarehouseRequest) {
@@ -48,12 +62,69 @@ public class WarehouseServiceImp implements WarehouseService {
         Map<UUID, WarehouseProduct> warehouseProductsMap = warehouseProductsList.stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
         log.info("Создаем Map из товаров имеющиеся на складе: {}", warehouseProductsMap);
-        // проверка наличия продуктов на складе
+        // проверка наличия товаров на складе
         checkAvailabilityProductsInWarehouse(productsInCart.keySet(), warehouseProductsMap.keySet());
-        // проверка количества продуктов на складе
+        // проверка количества товаров на складе
         checkQuantity(productsInCart, warehouseProductsMap);
 
-        return bookingProducts(warehouseProductsList);
+        return bookingProducts(productsInCart, warehouseProductsMap);
+    }
+
+    @Override
+    public BookedProductsDto assemblingProductsForTheOrder(AssemblyProductsForOrderRequest assemblyRequest) {
+        if (assemblyRequest == null) {
+            throw new IllegalArgumentException("AssemblyProductsForOrderRequest не должен быть null");
+        }
+        Map<UUID, Integer> productsInRequest = assemblyRequest.getProducts();
+        log.info("Продукты из AssemblyProductsForOrderRequest: {}", productsInRequest);
+
+        List<WarehouseProduct> warehouseProductsList = warehouseRepository.findAllById(productsInRequest.keySet());
+        log.info("Продукты из заказа имеющиеся на складе: {}", warehouseProductsList);
+        Map<UUID, WarehouseProduct> warehouseProductsMap = warehouseProductsList.stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
+        log.info("Создаем Map из продуктов имеющиеся на складе: {}", warehouseProductsMap);
+
+        try {
+            checkAvailabilityProductsInWarehouse(productsInRequest.keySet(), warehouseProductsMap.keySet());
+            checkQuantity(productsInRequest, warehouseProductsMap);
+        } catch (NoSpecifiedProductInWarehouseException | ProductInShoppingCartLowQuantityInWarehouse e) {
+            orderFeignClient.assembleOrderFailed(assemblyRequest.getOrderId());
+            throw e;
+        }
+
+
+        List<WarehouseProduct> products = changeQuantityProductsInWarehouse(productsInRequest, warehouseProductsMap);
+        setProductQuantityState(products);
+
+        return bookingProducts(productsInRequest, warehouseProductsMap);
+    }
+
+    @Override
+    public void returnProductsToTheWarehouse(Map<UUID, Integer> returnedProducts) {
+        if (returnedProducts == null || returnedProducts.isEmpty()) {
+            throw new IllegalArgumentException("Товары на возврат не должна быть null или пустой");
+        }
+        List<WarehouseProduct> warehouseProductsList = warehouseRepository.findAllById(returnedProducts.keySet());
+        log.info("Товары из заказа имеющиеся на складе: {}", warehouseProductsList);
+        Map<UUID, WarehouseProduct> warehouseProductsMap = warehouseProductsList.stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
+
+        checkAvailabilityProductsInWarehouse(returnedProducts.keySet(), warehouseProductsMap.keySet());
+
+        for (UUID id : returnedProducts.keySet()) {
+            Integer returnedQuantity = returnedProducts.get(id);
+            if (returnedQuantity == null || returnedQuantity <= 0) {
+                throw new IllegalArgumentException("Возвращаемое количество товара, должно быть не null и больше ноля");
+            }
+            WarehouseProduct product = warehouseProductsMap.get(id);
+            product.setQuantity(product.getQuantity() + returnedQuantity);
+            log.info("Вернули товар: {}", product);
+        }
+
+        List<WarehouseProduct> products = warehouseRepository.saveAll(warehouseProductsMap.values());
+        log.info("Обновленные товары: {}", products);
+
+        setProductQuantityState(products);
     }
 
     @Override
@@ -85,18 +156,18 @@ public class WarehouseServiceImp implements WarehouseService {
         return addressDto;
     }
 
-    private void checkAvailabilityProductsInWarehouse(Set<UUID> productsInCart, Set<UUID> productsInWarehouse) {
-        productsInCart.removeAll(productsInWarehouse);
-        log.info("Товары которых нет на складе: {}", productsInCart);
-        if (!productsInCart.isEmpty()) {
-            throw new NoSpecifiedProductInWarehouseException("На складе нет товаров: " + productsInCart);
+    private void checkAvailabilityProductsInWarehouse(Set<UUID> productsInRequest, Set<UUID> productsInWarehouse) {
+        Set<UUID> products = new HashSet<>(productsInRequest);
+        products.removeAll(productsInWarehouse);
+        if (!products.isEmpty()) {
+            throw new NoSpecifiedProductInWarehouseException("Нет заказываемого товара на складе: " + products);
         }
     }
 
-    private void checkQuantity(Map<UUID, Integer> productsInCart, Map<UUID, WarehouseProduct> warehouseProductsMap) {
+    private void checkQuantity(Map<UUID, Integer> productsInRequest, Map<UUID, WarehouseProduct> warehouseProductsMap) {
         List<UUID> notAvailabilityProducts = new ArrayList<>();
-        for (UUID id : productsInCart.keySet()) {
-            if (productsInCart.get(id) > warehouseProductsMap.get(id).getQuantity()) {
+        for (UUID id : productsInRequest.keySet()) {
+            if (productsInRequest.get(id) > warehouseProductsMap.get(id).getQuantity()) {
                 notAvailabilityProducts.add(id);
             }
         }
@@ -107,12 +178,31 @@ public class WarehouseServiceImp implements WarehouseService {
         }
     }
 
-    private BookedProductsDto bookingProducts(List<WarehouseProduct> products) {
+    private void setProductQuantityState(List<WarehouseProduct> products) {
+        products.forEach(this::setProductQuantityState);
+    }
+
+    private List<WarehouseProduct> changeQuantityProductsInWarehouse(
+            Map<UUID, Integer> productsInRequest,
+            Map<UUID, WarehouseProduct> warehouseProductsMap) {
+        for (UUID id : productsInRequest.keySet()) {
+            Integer newQuantity = warehouseProductsMap.get(id).getQuantity() - productsInRequest.get(id);
+            warehouseProductsMap.get(id).setQuantity(newQuantity);
+            log.info("Задаем новое количество товара: {}", warehouseProductsMap.get(id));
+        }
+        return warehouseRepository.saveAll(warehouseProductsMap.values());
+    }
+
+    private BookedProductsDto bookingProducts(Map<UUID, Integer> products,
+                                              Map<UUID, WarehouseProduct> warehouseProductsMap) {
         BookedProductsDto result = new BookedProductsDto(0.0, 0.0, false);
-        for (WarehouseProduct product : products) {
-            result.setDeliveryVolume(result.getDeliveryVolume() + product.getWeight());
-            result.setDeliveryVolume(result.getDeliveryVolume()
-                    + product.getWidth() * product.getHeight() * product.getDepth());
+        for (UUID id : products.keySet()) {
+            Integer quantity = products.get(id);
+            WarehouseProduct product = warehouseProductsMap.get(id);
+
+            result.setDeliveryWeight(product.getWeight() * quantity + result.getDeliveryWeight());
+            result.setDeliveryVolume(product.getDepth() * product.getWidth() * product.getHeight() * quantity
+                    + result.getDeliveryVolume());
             if (product.getFragile()) {
                 result.setFragile(true);
             }

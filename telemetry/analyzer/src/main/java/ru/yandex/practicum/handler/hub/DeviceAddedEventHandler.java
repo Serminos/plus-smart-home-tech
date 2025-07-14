@@ -10,7 +10,6 @@ import ru.yandex.practicum.model.Sensor;
 import ru.yandex.practicum.repository.SensorRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Component
