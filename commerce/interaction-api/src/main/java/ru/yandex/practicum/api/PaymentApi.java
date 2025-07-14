@@ -20,4 +20,7 @@ public interface PaymentApi {
 
     @PostMapping("/api/v1/payment/failed")
     void setPaymentFailed(@RequestBody UUID paymentId);
+
+    @PostMapping("/api/v1/payment/refund")
+    void payOrder(@RequestBody UUID paymentId);
 }

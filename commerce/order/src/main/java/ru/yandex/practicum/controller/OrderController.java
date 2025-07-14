@@ -65,4 +65,28 @@ public class OrderController implements OrderApi {
         log.info("Запрос при неудачной сборке заказа на складе: {}", orderId);
         return orderService.assembleOrderFailed(orderId);
     }
+
+    @Override
+    public OrderDto calculateDelivery(UUID orderId) {
+        log.info("Запрос на рассчет стоимости доставки: {}", orderId);
+        return orderService.calculateDelivery(orderId);
+    }
+
+    @Override
+    public OrderDto deliveryOrder(UUID orderId) {
+        log.info("Запрос при удачной доставке заказа: {}", orderId);
+        return orderService.deliveryOrder(orderId);
+    }
+
+    @Override
+    public OrderDto deliveryOrderFailed(UUID orderId) {
+        log.info("Запрос при неудачной доставке заказа: {}", orderId);
+        return orderService.deliveryOrderFailed(orderId);
+    }
+
+    @Override
+    public OrderDto completedOrder(UUID orderId) {
+        log.info("Запрос на завершение заказа: {}", orderId);
+        return orderService.completedOrder(orderId);
+    }
 }

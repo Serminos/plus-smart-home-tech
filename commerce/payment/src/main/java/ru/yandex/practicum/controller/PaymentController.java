@@ -39,4 +39,10 @@ public class PaymentController implements PaymentApi {
         log.info("Запрос при неудачной оплате заказа: {}", paymentId);
         paymentService.setPaymentFailed(paymentId);
     }
+
+    @Override
+    public void payOrder(UUID paymentId) {
+        log.info("Запрос при удачной оплате заказа: {}", paymentId);
+        paymentService.payOrder(paymentId);
+    }
 }

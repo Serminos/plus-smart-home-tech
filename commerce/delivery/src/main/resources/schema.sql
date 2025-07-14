@@ -1,10 +1,18 @@
-create TABLE IF NOT EXISTS warehouse_products
+create TABLE IF NOT EXISTS addresses
 (
-    product_id UUID PRIMARY KEY,
-    fragile BOOLEAN,
-    width DOUBLE PRECISION,
-    height DOUBLE PRECISION,
-    depth DOUBLE PRECISION,
-    weight DOUBLE PRECISION,
-    quantity INTEGER
+    address_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    country VARCHAR NOT NULL,
+    city VARCHAR NOT NULL,
+    street VARCHAR NOT NULL,
+    house VARCHAR NOT NULL,
+    flat VARCHAR NOT NULL
+);
+
+create TABLE IF NOT EXISTS deliveries
+(
+    delivery_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_address_id UUID REFERENCES addresses (address_id),
+    to_address_id UUID REFERENCES addresses (address_id),
+    delivery_state VARCHAR NOT NULL,
+    order_id UUID NOT NULL
 );

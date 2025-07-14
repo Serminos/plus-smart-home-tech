@@ -1,6 +1,6 @@
 spring:
   application:
-    name: warehouse
+    name: delivery
   config:
     import: "configserver:"
   cloud:

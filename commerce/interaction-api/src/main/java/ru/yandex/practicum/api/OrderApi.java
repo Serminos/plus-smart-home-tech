@@ -35,4 +35,16 @@ public interface OrderApi {
 
     @PostMapping("/api/v1/order/assembly/failed")
     OrderDto assembleOrderFailed(@RequestBody UUID orderId);
+
+    @PostMapping("/api/v1/order/calculate/delivery")
+    OrderDto calculateDelivery(@RequestBody UUID orderId);
+
+    @PostMapping("/api/v1/order/delivery")
+    OrderDto deliveryOrder(@RequestBody UUID orderId);
+
+    @PostMapping("/api/v1/order/delivery/failed")
+    OrderDto deliveryOrderFailed(@RequestBody UUID orderId);
+
+    @PostMapping("/api/v1/order/completed")
+    OrderDto completedOrder(@RequestBody UUID orderId);
 }

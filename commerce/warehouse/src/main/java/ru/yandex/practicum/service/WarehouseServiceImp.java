@@ -10,6 +10,7 @@ import ru.yandex.practicum.exception.NoOrderFoundException;
 import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
+import ru.yandex.practicum.feignClient.OrderFeignClient;
 import ru.yandex.practicum.feignClient.ShoppingStoreFeignClient;
 import ru.yandex.practicum.mapper.WarehouseMapper;
 import ru.yandex.practicum.model.OrderBooking;
@@ -30,6 +31,7 @@ public class WarehouseServiceImp implements WarehouseService {
     private final ShoppingStoreFeignClient storeFeignClient;
     private AddressDto warehouseAddress = settingAddress();
     private final OrderBookingRepository bookingRepository;
+    private final OrderFeignClient orderFeignClient;
 
 
     @Override
@@ -82,8 +84,14 @@ public class WarehouseServiceImp implements WarehouseService {
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
         log.info("Создаем Map из продуктов имеющиеся на складе: {}", warehouseProductsMap);
 
-        checkAvailabilityProductsInWarehouse(productsInRequest.keySet(), warehouseProductsMap.keySet()); // проверка наличия продуктов на складе
-        checkQuantity(productsInRequest, warehouseProductsMap); // проверка количества продуктов на складе
+        try {
+            checkAvailabilityProductsInWarehouse(productsInRequest.keySet(), warehouseProductsMap.keySet());
+            checkQuantity(productsInRequest, warehouseProductsMap);
+        } catch (NoSpecifiedProductInWarehouseException | ProductInShoppingCartLowQuantityInWarehouse e) {
+            orderFeignClient.assembleOrderFailed(assemblyRequest.getOrderId());
+            throw e;
+        }
+
 
         List<WarehouseProduct> products = changeQuantityProductsInWarehouse(productsInRequest, warehouseProductsMap);
         setProductQuantityState(products);

@@ -11,6 +11,17 @@ public class ErrorHandler {
     public record ErrorResponse(String message) {
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({
+            IllegalArgumentException.class,
+            NotEnoughInfoInOrderToCalculateException.class,
+            NotAssembledOrderException.class,
+            MethodArgumentNotValidException.class
+    })
+    public ErrorResponse handleIBadRequestException(final Exception e) {
+        return new ErrorResponse(e.getMessage());
+    }
+
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler({
             NoOrderFoundException.class
@@ -19,16 +30,11 @@ public class ErrorHandler {
         return new ErrorResponse(e.getMessage());
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler({
-            IllegalArgumentException.class,
-            SpecifiedProductAlreadyInWarehouseException.class,
-            ProductInShoppingCartLowQuantityInWarehouse.class,
-            ProductInShoppingCartNotInWarehouse.class,
-            NoSpecifiedProductInWarehouseException.class,
-            MethodArgumentNotValidException.class
+            NotAuthorizedUserException.class
     })
-    public ErrorResponse handleIBadRequestException(final Exception e) {
+    public ErrorResponse handleIAuthorizedException(final Exception e) {
         return new ErrorResponse(e.getMessage());
     }
 
