@@ -40,6 +40,9 @@ public class DeliveryService {
     private static final Double ADDRESS_DELIVERY_SURCHARGE = 0.2;
 
     public DeliveryDto createDelivery(DeliveryDto deliveryDto) {
+        if (deliveryDto == null) {
+            throw new IllegalArgumentException("DeliveryDto не может быть null");
+        }
         Delivery delivery = DeliveryMapper.mapToDelivery(deliveryDto);
         Optional<Delivery> deliveryOpt = deliveryRepository.findByOrderId(deliveryDto.getOrderId());
         if (deliveryOpt.isPresent()) {
@@ -61,6 +64,13 @@ public class DeliveryService {
         delivery.setDeliveryState(DeliveryState.CREATED);
         delivery = deliveryRepository.save(delivery);
         log.info("Сохраняем доставку в БД: {}", delivery);
+        // Уведомление склада
+        ShippedToDeliveryRequest request = new ShippedToDeliveryRequest();
+        request.setDeliveryId(delivery.getDeliveryId());
+        request.setOrderId(delivery.getOrderId());
+        warehouseFeign.shippedProductsToTheWarehouse(request);
+        log.info("Уведомление склада о доставке: {}", delivery);
+
         return DeliveryMapper.mapToDeliveryDto(delivery);
     }
 
@@ -72,13 +82,13 @@ public class DeliveryService {
         Address fromAddress = delivery.getFromAddress();
         Address toAddress = delivery.getToAddress();
         Double cost = BASE_COST;
-
+        String warehouseAddress = fromAddress.getCity();
         switch (fromAddress.getCity()) {
             case "ADDRESS_1":
-                cost += cost;
+                cost += BASE_COST;
                 break;
             case "ADDRESS_2":
-                cost += cost * WAREHOUSE_ADDRESS_2_SURCHARGE;
+                cost += BASE_COST * WAREHOUSE_ADDRESS_2_SURCHARGE;
                 break;
             default:
                 break;
@@ -88,9 +98,9 @@ public class DeliveryService {
         }
         cost += orderDto.getDeliveryWeight() * WEIGHT_SURCHARGE;
         cost += orderDto.getDeliveryVolume() * VOLUME_SURCHARGE;
-        if (!(fromAddress.getCountry().equals(toAddress.getCountry())
-                && fromAddress.getCity().equals(toAddress.getCity())
-                && fromAddress.getStreet().equals(toAddress.getStreet()))) {
+
+        String fullFromAddress = fromAddress.toString();
+        if (!fullFromAddress.contains("ADDRESS_1") || !fullFromAddress.contains("ADDRESS_2")){
             cost += cost * ADDRESS_DELIVERY_SURCHARGE;
         }
         log.info("Стоимость доставки: {}", cost);
